@@ -1,0 +1,8 @@
+/Users/sergiykravchyshyn/Documents/echo_server/build/CMakeFiles/edit_cache.dir
+/Users/sergiykravchyshyn/Documents/echo_server/build/CMakeFiles/rebuild_cache.dir
+/Users/sergiykravchyshyn/Documents/echo_server/build/client/CMakeFiles/client.dir
+/Users/sergiykravchyshyn/Documents/echo_server/build/client/CMakeFiles/edit_cache.dir
+/Users/sergiykravchyshyn/Documents/echo_server/build/client/CMakeFiles/rebuild_cache.dir
+/Users/sergiykravchyshyn/Documents/echo_server/build/server/CMakeFiles/server.dir
+/Users/sergiykravchyshyn/Documents/echo_server/build/server/CMakeFiles/edit_cache.dir
+/Users/sergiykravchyshyn/Documents/echo_server/build/server/CMakeFiles/rebuild_cache.dir
