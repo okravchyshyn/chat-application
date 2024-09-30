@@ -83,13 +83,20 @@ int main(int argc, char **argv) {
 
     std::cout << "Received message from client: " << buffer << std::endl;
 
-    // 6 send
+    // echo response
+    std::string responce = "Echo: " + std::string(buffer);
+    int bytes_sent =
+        send(client_socket, responce.c_str(), responce.length(), 0);
+    if (bytes_sent < 0) {
+      perror("Could not send");
+      return 1;
+    }
   }
+
   std::cout << "Shutting down socket." << std::endl;
   shutdown(client_socket, SHUT_RDWR);
   close(client_socket);
   close(sock);
 
   return 0;
-  // 7 goto 5
 }
