@@ -5,7 +5,51 @@
 #include <stdlib.h>
 #include <string>
 #include <sys/socket.h>
+#include <thread>
 #include <unistd.h>
+#include <vector>
+
+void handle_client(int client_socket, sockaddr_in remote_address) {
+  std::string client_ip = inet_ntoa(remote_address.sin_addr);
+  int remote_port = ntohs(remote_address.sin_port);
+
+  std::cout << "Accepted new client @ " << client_ip << ":" << remote_port
+            << std::endl;
+
+  int BUFFLEN = 1024;
+  char buffer[BUFFLEN];
+
+  while (1) {
+    memset(buffer, 0, BUFFLEN);
+    // 5 recv
+    int bytes_received = recv(client_socket, buffer, BUFFLEN - 1, 0);
+    if (bytes_received < 0) {
+      perror("Could not receive");
+      break;
+    }
+    if (bytes_received == 0) {
+      std::cout << "Client at " << client_ip << ":" << remote_port
+                << " has disconnected." << std::endl;
+      break;
+    }
+
+    std::cout << "Received message from client: " << buffer << std::endl;
+
+    // echo response
+    std::string responce = "Echo: " + std::string(buffer);
+    int bytes_sent =
+        send(client_socket, responce.c_str(), responce.length(), 0);
+    if (bytes_sent < 0) {
+      perror("Could not send");
+      break;
+    }
+  }
+
+  std::cout << "Shutting down socket for client at " << client_ip << ":"
+            << remote_port << std::endl;
+  shutdown(client_socket, SHUT_RDWR);
+  close(client_socket);
+};
 
 int main(int argc, char **argv) {
 
@@ -38,64 +82,38 @@ int main(int argc, char **argv) {
     return 1;
   }
   // 3 listen
-  int listen_value = listen(sock, 1);
+  int listen_value = listen(sock, 10);
   if (listen_value < 0) {
 
     perror("Could not listen");
     return 1;
   }
 
-  // 4 accept
-  struct sockaddr_in remote_address;
-  memset(&remote_address, 0, sizeof(remote_address));
-  socklen_t remote_addrlen = sizeof(remote_address);
+  std::vector<std::thread> threads;
 
-  std::cout << "Waiting for new connection" << std::endl;
-  int client_socket =
-      accept(sock, (struct sockaddr *)&remote_address, &remote_addrlen);
-  if (client_socket < 0) {
-    perror("Could not accept");
-    return 1;
-  }
-
-  std::string client_ip = inet_ntoa(remote_address.sin_addr);
-  int remote_port = ntohs(remote_address.sin_port);
-
-  std::cout << "Accepted new client @ " << client_ip << ":" << remote_port
-            << std::endl;
-
-  int BUFFLEN = 1024;
-  char buffer[BUFFLEN];
+  std::cout << "Waiting for new connection..." << std::endl;
 
   while (1) {
-    memset(buffer, 0, BUFFLEN);
-    // 5 recv
-    int bytes_received = recv(client_socket, buffer, BUFFLEN - 1, 0);
-    if (bytes_received < 0) {
-      perror("Could not receive");
-      return 1;
-    }
-    if (bytes_received == 0) {
-      std::cout << "Client at " << client_ip << ":" << remote_port
-                << " has disconnected." << std::endl;
-      break;
+    struct sockaddr_in remote_address;
+    memset(&remote_address, 0, sizeof(remote_address));
+    socklen_t remote_addrlen = sizeof(remote_address);
+
+    int client_socket =
+        accept(sock, (struct sockaddr *)&remote_address, &remote_addrlen);
+    if (client_socket < 0) {
+      perror("Could not accept");
+      continue;
     }
 
-    std::cout << "Received message from client: " << buffer << std::endl;
+    threads.emplace_back(handle_client, client_socket, remote_address);
+  }
 
-    // echo response
-    std::string responce = "Echo: " + std::string(buffer);
-    int bytes_sent =
-        send(client_socket, responce.c_str(), responce.length(), 0);
-    if (bytes_sent < 0) {
-      perror("Could not send");
-      return 1;
+  for (auto &th : threads) {
+    if (th.joinable()) {
+      th.join();
     }
   }
 
-  std::cout << "Shutting down socket." << std::endl;
-  shutdown(client_socket, SHUT_RDWR);
-  close(client_socket);
   close(sock);
 
   return 0;
